@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Simple test endpoint (no auth, no DB)
+Route::get('/test', function () {
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Backend API is working!',
+        'php_version' => PHP_VERSION,
+        'laravel_version' => app()->version(),
+    ]);
+});
+
 // Public route - Login (only accessible when NOT authenticated)
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('guest');
