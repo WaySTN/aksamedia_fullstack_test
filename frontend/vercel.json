@@ -1,0 +1,8 @@
+{
+    "version": 2,
+    "framework": "vite",
+    "name": "aksamedia-frontend",
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+    ]
+}
