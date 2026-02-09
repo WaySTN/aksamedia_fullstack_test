@@ -1,0 +1,7 @@
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+.env
+node_modules/
