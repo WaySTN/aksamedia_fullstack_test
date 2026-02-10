@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from './Toast';
+import logoAksamedia from '../assets/logo_aksamedia.webp';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -31,8 +33,11 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const { showToast } = useToast();
+
     const handleLogout = () => {
         logout();
+        showToast('Logout berhasil!', 'success');
         navigate('/login');
     };
 
@@ -48,15 +53,13 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <nav className="bg-white dark:bg-[#141824]/90 dark:backdrop-blur-xl shadow-lg border-b border-gray-200 dark:border-white/[0.06] sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     {/* Logo & Nav Links */}
                     <div className="flex items-center">
                         <Link to="/dashboard" className="flex-shrink-0 flex items-center">
-                            <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-400 bg-clip-text text-transparent">
-                                Aksamedia
-                            </span>
+                            <img src={logoAksamedia} alt="Aksamedia" className="h-8 dark:invert dark:brightness-200" />
                         </Link>
 
                         {/* Desktop Navigation */}

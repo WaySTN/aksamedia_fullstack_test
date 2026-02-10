@@ -1,59 +1,278 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🔧 Backend — Laravel REST API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API backend untuk aplikasi manajemen karyawan, dibangun menggunakan **Laravel 12** dengan autentikasi **Sanctum**.
 
-## About Laravel
+> **Live API:** [aksamedia-backend-phi.vercel.app](https://aksamedia-backend-phi.vercel.app/)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🏗️ Arsitektur
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   │   └── Api/
+│   │       ├── AuthController.php        # Login, Logout, Update Profile
+│   │       ├── DivisionController.php     # Daftar divisi
+│   │       └── EmployeeController.php     # CRUD karyawan
+│   └── Requests/
+│       └── Api/
+│           ├── ApiFormRequest.php          # Base class (shared JSON validation response)
+│           ├── LoginRequest.php            # Validasi login
+│           ├── StoreEmployeeRequest.php    # Validasi create employee
+│           ├── UpdateEmployeeRequest.php   # Validasi update employee
+│           └── UpdateProfileRequest.php    # Validasi update profile
+├── Models/
+│   ├── Admin.php                          # Model admin (HasApiTokens, HasUuids)
+│   ├── Division.php                       # Model divisi (HasMany → Employee)
+│   └── Employee.php                       # Model karyawan (BelongsTo → Division)
+└── Providers/
+    └── AppServiceProvider.php             # Force HTTPS in production
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 Setup
 
-## Learning Laravel
+```bash
+# 1. Install dependencies
+composer install
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# 2. Copy environment file
+cp .env.example .env
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 3. Generate app key
+php artisan key:generate
 
-## Laravel Sponsors
+# 4. Jalankan migration & seeder
+php artisan migrate:fresh --seed
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 5. Buat storage link (untuk upload foto)
+php artisan storage:link
 
-### Premium Partners
+# 6. Jalankan server
+php artisan serve
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🔑 Kredensial Default
 
-## Contributing
+Seeder akan membuat 1 admin, 6 divisi, dan 12 karyawan.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Field | Value |
+|-------|-------|
+| Username | `admin` |
+| Password | `pastibisa` |
+| Email | `admin@aksamedia.com` |
 
-## Code of Conduct
+## 📡 API Reference
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Base URL: `http://localhost:8000`
 
-## Security Vulnerabilities
+> **Catatan:** API prefix dikosongkan (`apiPrefix: ''`), sehingga semua endpoint langsung di root path.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+### Authentication
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+#### Login
+
+```http
+POST /login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "pastibisa"
+}
+```
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Login berhasil",
+  "data": {
+    "token": "1|abc123...",
+    "admin": {
+      "id": "uuid",
+      "name": "Administrator",
+      "username": "admin",
+      "phone": "081234567890",
+      "email": "admin@aksamedia.com"
+    }
+  }
+}
+```
+
+#### Logout
+
+```http
+POST /logout
+Authorization: Bearer {token}
+```
+
+#### Update Profile
+
+```http
+PUT /profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "New Name",
+  "phone": "081234567890",
+  "email": "new@email.com"
+}
+```
+
+---
+
+### Divisions
+
+#### Get All Divisions
+
+```http
+GET /divisions?name=backend
+Authorization: Bearer {token}
+```
+
+| Parameter | Tipe | Deskripsi |
+|-----------|------|-----------|
+| `name` | string (opsional) | Filter berdasarkan nama divisi |
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Data divisi berhasil diambil",
+  "data": {
+    "divisions": [
+      { "id": "uuid", "name": "Backend" }
+    ]
+  },
+  "pagination": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 10,
+    "total": 1,
+    "from": 1,
+    "to": 1
+  }
+}
+```
+
+---
+
+### Employees
+
+#### List Employees
+
+```http
+GET /employees?name=budi&division_id={uuid}
+Authorization: Bearer {token}
+```
+
+| Parameter | Tipe | Deskripsi |
+|-----------|------|-----------|
+| `name` | string (opsional) | Filter berdasarkan nama |
+| `division_id` | uuid (opsional) | Filter berdasarkan divisi |
+
+#### Create Employee
+
+```http
+POST /employees
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+name: Budi Santoso
+phone: 081234567890
+division: {division_uuid}
+position: Junior Developer
+image: (file, opsional)
+```
+
+#### Update Employee
+
+```http
+PUT /employees/{id}
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+name: Budi Updated (opsional)
+phone: 089876543210 (opsional)
+division: {division_uuid} (opsional)
+position: Senior Developer (opsional)
+image: (file, opsional)
+```
+
+#### Delete Employee
+
+```http
+DELETE /employees/{id}
+Authorization: Bearer {token}
+```
+
+---
+
+### Error Response Format
+
+Semua error menggunakan format JSON yang konsisten:
+
+```json
+{
+  "status": "error",
+  "message": "Deskripsi error"
+}
+```
+
+### Validation Error (422)
+
+```json
+{
+  "status": "error",
+  "message": "Validasi gagal",
+  "errors": {
+    "name": ["Nama wajib diisi"],
+    "division": ["Divisi tidak ditemukan"]
+  }
+}
+```
+
+## 🛠️ Fitur Laravel yang Digunakan
+
+| Fitur | Penggunaan |
+|-------|-----------|
+| **Sanctum** | Token-based auth (`HasApiTokens`, middleware `auth:sanctum`) |
+| **Form Request** | Validasi terpisah di 4 class, extends dari `ApiFormRequest` base class |
+| **Eloquent** | Relationships (`BelongsTo`, `HasMany`), `HasUuids`, mass assignment `$fillable` |
+| **Query Builder** | `when()` + `filled()` untuk conditional query filtering |
+| **Migration** | Schema dengan UUID primary key, foreign key constraints |
+| **Seeder** | `AdminSeeder`, `DivisionSeeder`, `EmployeeSeeder` |
+| **Storage** | Upload file ke `public` disk, `Storage::disk('public')->delete()` |
+| **Exception Handling** | Custom JSON rendering di `bootstrap/app.php` |
+| **Middleware** | `auth:sanctum`, `guest`, `statefulApi` |
+| **Named Routes** | Semua route memiliki `->name()` (e.g., `api.employees.index`) |
+
+## 📦 Database Schema
+
+```
+admins
+├── id (UUID, PK)
+├── name (string)
+├── username (string, unique)
+├── phone (string, nullable)
+├── email (string, unique)
+├── password (string, hashed)
+└── timestamps
+
+divisions
+├── id (UUID, PK)
+├── name (string)
+└── timestamps
+
+employees
+├── id (UUID, PK)
+├── image (string, nullable)
+├── name (string)
+├── phone (string)
+├── division_id (UUID, FK → divisions.id, CASCADE)
+├── position (string)
+└── timestamps
+```

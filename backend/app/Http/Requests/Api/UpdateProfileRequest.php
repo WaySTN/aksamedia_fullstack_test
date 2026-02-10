@@ -2,13 +2,15 @@
 
 namespace App\Http\Requests\Api;
 
+use Illuminate\Validation\Rule;
+
 /**
- * Validates employee creation requests.
+ * Validates profile update requests.
  *
- * Ensures all required fields (name, phone, division, position)
- * are provided and the optional image meets size/format constraints.
+ * Ensures name, phone, and email are provided and that
+ * the email remains unique (excluding the current user).
  */
-class StoreEmployeeRequest extends ApiFormRequest
+class UpdateProfileRequest extends ApiFormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -18,11 +20,13 @@ class StoreEmployeeRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'division' => 'required|uuid|exists:divisions,id',
-            'position' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('admins')->ignore($this->user()->id),
+            ],
         ];
     }
 
@@ -36,11 +40,9 @@ class StoreEmployeeRequest extends ApiFormRequest
         return [
             'name.required' => 'Nama wajib diisi',
             'phone.required' => 'Nomor telepon wajib diisi',
-            'division.required' => 'Divisi wajib dipilih',
-            'division.exists' => 'Divisi tidak ditemukan',
-            'position.required' => 'Posisi wajib diisi',
-            'image.image' => 'File harus berupa gambar',
-            'image.max' => 'Ukuran gambar maksimal 2MB',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah digunakan',
         ];
     }
 }

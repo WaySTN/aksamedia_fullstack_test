@@ -2,17 +2,19 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-
-class UpdateEmployeeRequest extends FormRequest
+/**
+ * Validates employee update requests.
+ *
+ * Uses 'sometimes' rule to allow partial updates —
+ * only fields present in the request will be validated.
+ */
+class UpdateEmployeeRequest extends ApiFormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -24,6 +26,11 @@ class UpdateEmployeeRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [
@@ -35,14 +42,5 @@ class UpdateEmployeeRequest extends FormRequest
             'image.image' => 'File harus berupa gambar',
             'image.max' => 'Ukuran gambar maksimal 2MB',
         ];
-    }
-
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json([
-            'status' => 'error',
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
-        ], 422));
     }
 }

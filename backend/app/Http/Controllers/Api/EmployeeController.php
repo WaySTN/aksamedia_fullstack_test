@@ -10,45 +10,46 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Handles employee CRUD operations.
+ *
+ * Provides full create, read, update, and delete functionality
+ * for employee records, including image upload management.
+ */
 class EmployeeController extends Controller
 {
     /**
-     * Get all employees with optional filters
+     * Display a paginated listing of employees.
+     *
+     * Supports optional filtering by name and division_id.
+     * Eager loads the division relationship to avoid N+1 queries.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Employee::with('division');
-
-        // Filter by name
-        if ($request->has('name') && $request->name) {
-            $query->where('name', 'like', '%' . $request->name . '%');
-        }
-
-        // Filter by division
-        if ($request->has('division_id') && $request->division_id) {
-            $query->where('division_id', $request->division_id);
-        }
-
-        // Paginate results
-        $employees = $query->paginate(10);
+        $employees = Employee::with('division')
+            ->when($request->filled('name'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->name . '%');
+            })
+            ->when($request->filled('division_id'), function ($query) use ($request) {
+                $query->where('division_id', $request->division_id);
+            })
+            ->paginate(10);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Data karyawan berhasil diambil',
             'data' => [
-                'employees' => $employees->map(function ($employee) {
-                    return [
-                        'id' => $employee->id,
-                        'image' => $employee->image ? url('storage/' . $employee->image) : null,
-                        'name' => $employee->name,
-                        'phone' => $employee->phone,
-                        'division' => [
-                            'id' => $employee->division->id,
-                            'name' => $employee->division->name,
-                        ],
-                        'position' => $employee->position,
-                    ];
-                }),
+                'employees' => $employees->map(fn(Employee $employee) => [
+                    'id' => $employee->id,
+                    'image' => $employee->image ? url('storage/' . $employee->image) : null,
+                    'name' => $employee->name,
+                    'phone' => $employee->phone,
+                    'division' => [
+                        'id' => $employee->division->id,
+                        'name' => $employee->division->name,
+                    ],
+                    'position' => $employee->position,
+                ]),
             ],
             'pagination' => [
                 'current_page' => $employees->currentPage(),
@@ -62,7 +63,10 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Store a newly created employee
+     * Store a newly created employee in storage.
+     *
+     * Handles image upload to the 'employees' directory on the public disk.
+     * Validation is handled by StoreEmployeeRequest.
      */
     public function store(StoreEmployeeRequest $request): JsonResponse
     {
@@ -73,10 +77,8 @@ class EmployeeController extends Controller
             'position' => $request->position,
         ];
 
-        // Handle image upload
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('employees', 'public');
-            $data['image'] = $path;
+            $data['image'] = $request->file('image')->store('employees', 'public');
         }
 
         Employee::create($data);
@@ -88,7 +90,10 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Update the specified employee
+     * Update the specified employee in storage.
+     *
+     * Supports partial updates using validated data.
+     * Replaces old image on the public disk when a new one is uploaded.
      */
     public function update(UpdateEmployeeRequest $request, string $id): JsonResponse
     {
@@ -101,29 +106,19 @@ class EmployeeController extends Controller
             ], 404);
         }
 
-        $data = [];
+        $data = collect($request->validated())
+            ->when($request->has('division'), function ($collection) {
+                return $collection->put('division_id', $collection->pull('division'));
+            })
+            ->except('image')
+            ->toArray();
 
-        if ($request->has('name')) {
-            $data['name'] = $request->name;
-        }
-        if ($request->has('phone')) {
-            $data['phone'] = $request->phone;
-        }
-        if ($request->has('division')) {
-            $data['division_id'] = $request->division;
-        }
-        if ($request->has('position')) {
-            $data['position'] = $request->position;
-        }
-
-        // Handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image
+            // Delete old image before storing the new one
             if ($employee->image) {
                 Storage::disk('public')->delete($employee->image);
             }
-            $path = $request->file('image')->store('employees', 'public');
-            $data['image'] = $path;
+            $data['image'] = $request->file('image')->store('employees', 'public');
         }
 
         $employee->update($data);
@@ -135,7 +130,9 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Remove the specified employee
+     * Remove the specified employee from storage.
+     *
+     * Also deletes the associated image file from the public disk.
      */
     public function destroy(string $id): JsonResponse
     {
@@ -148,7 +145,7 @@ class EmployeeController extends Controller
             ], 404);
         }
 
-        // Delete image if exists
+        // Clean up the image file before deleting the record
         if ($employee->image) {
             Storage::disk('public')->delete($employee->image);
         }

@@ -2,17 +2,19 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-
-class LoginRequest extends FormRequest
+/**
+ * Validates admin login requests.
+ *
+ * Ensures both username and password fields are provided
+ * before attempting authentication.
+ */
+class LoginRequest extends ApiFormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -21,20 +23,16 @@ class LoginRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [
             'username.required' => 'Username wajib diisi',
             'password.required' => 'Password wajib diisi',
         ];
-    }
-
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(response()->json([
-            'status' => 'error',
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
-        ], 422));
     }
 }

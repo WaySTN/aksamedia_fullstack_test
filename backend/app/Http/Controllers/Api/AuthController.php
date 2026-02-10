@@ -4,16 +4,25 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
+use App\Http\Requests\Api\UpdateProfileRequest;
 use App\Models\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
+/**
+ * Handles authentication-related operations.
+ *
+ * Manages admin login, logout, and profile updates
+ * using Laravel Sanctum for token-based authentication.
+ */
 class AuthController extends Controller
 {
     /**
-     * Handle login request
+     * Handle admin login request.
+     *
+     * Validates credentials, revokes existing tokens,
+     * and issues a new Sanctum personal access token.
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -26,10 +35,9 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Delete old tokens
+        // Revoke all existing tokens before issuing a new one
         $admin->tokens()->delete();
 
-        // Create new token
         $token = $admin->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -49,7 +57,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle logout request
+     * Handle admin logout request.
+     *
+     * Revokes the current access token used for authentication.
      */
     public function logout(Request $request): JsonResponse
     {
@@ -62,27 +72,16 @@ class AuthController extends Controller
     }
 
     /**
-     * Update user profile
+     * Update the authenticated admin's profile.
+     *
+     * Accepts name, phone, and email fields.
+     * Validation is handled by UpdateProfileRequest.
      */
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'email' => [
-                'required',
-                'email',
-                Rule::unique('admins')->ignore($user->id),
-            ],
-        ]);
-
-        $user->update([
-            'name' => $request->name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-        ]);
+        $user->update($request->validated());
 
         return response()->json([
             'status' => 'success',

@@ -1,9 +1,9 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Handle unauthenticated requests FIRST (must be before Throwable)
+        // Return JSON for unauthenticated requests (must be registered before Throwable)
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             return response()->json([
                 'status' => 'error',
@@ -26,18 +26,25 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 401);
         });
 
-        // Force ALL other exceptions to return JSON (bypass View rendering for Vercel)
+        // Force all other exceptions to return JSON (bypass View rendering for Vercel)
         $exceptions->render(function (\Throwable $e, Request $request) {
             $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+            $validStatus = $statusCode >= 100 && $statusCode < 600 ? $statusCode : 500;
 
-            return response()->json([
+            $response = [
                 'status' => 'error',
-                'message' => app()->environment('production') && $statusCode === 500
+                'message' => app()->environment('production') && $validStatus === 500
                     ? 'Internal Server Error'
                     : $e->getMessage(),
-                'error' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ], $statusCode >= 100 && $statusCode < 600 ? $statusCode : 500);
+            ];
+
+            // Only expose debug details in non-production environments
+            if (!app()->environment('production')) {
+                $response['exception'] = get_class($e);
+                $response['file'] = $e->getFile();
+                $response['line'] = $e->getLine();
+            }
+
+            return response()->json($response, $validStatus);
         });
     })->create();

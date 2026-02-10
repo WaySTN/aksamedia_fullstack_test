@@ -1,16 +1,114 @@
-# React + Vite
+# 🎨 Frontend — React SPA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single Page Application untuk manajemen karyawan, dibangun dengan **React 19** + **Vite** + **Tailwind CSS v4**.
 
-Currently, two official plugins are available:
+## 🏗️ Arsitektur
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
+src/
+├── components/
+│   ├── Layout.jsx              # Layout utama dengan Navbar + Outlet
+│   ├── Modal.jsx               # Reusable modal dialog
+│   ├── Navbar.jsx              # Navigation bar (responsive, theme toggle)
+│   ├── Pagination.jsx          # Reusable pagination control
+│   ├── ProtectedRoute.jsx      # Auth guard untuk protected routes
+│   └── Toast.jsx               # Toast notification system (Context-based)
+├── contexts/
+│   ├── AuthContext.jsx          # Authentication state & methods
+│   └── ThemeContext.jsx         # Dark/Light/System theme management
+├── hooks/
+│   └── useLocalStorage.js       # Custom hook untuk localStorage
+├── pages/
+│   ├── Dashboard.jsx            # Dashboard dengan statistik & quick actions
+│   ├── Employees.jsx            # CRUD karyawan (tabel, modal, filter)
+│   ├── Login.jsx                # Halaman login
+│   ├── Profile.jsx              # Edit profil admin
+│   └── DataManagement.jsx       # CRUD lokal (localStorage)
+├── services/
+│   └── api.js                   # API service layer (fetch wrapper)
+├── App.jsx                      # Root component (routing & providers)
+├── main.jsx                     # Entry point (React + BrowserRouter)
+└── index.css                    # Global styles (Tailwind + custom scrollbar)
+```
 
-## React Compiler
+## 🚀 Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Jalankan development server
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Build untuk production
+npm run build
+```
+
+## ⚙️ Environment Variables
+
+Buat file `.env` di root frontend (opsional):
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+> Default: `http://127.0.0.1:8000/api` jika tidak diset.
+
+## 🧩 Arsitektur Komponen
+
+### Provider Hierarchy
+
+```
+BrowserRouter
+  └── ThemeProvider         (dark/light/system)
+       └── ToastProvider    (notifikasi global)
+            └── AuthProvider (login state & token)
+                 └── Routes
+                      ├── /login    → Login (public)
+                      └── ProtectedRoute
+                           └── Layout (Navbar + Outlet)
+                                ├── /dashboard  → Dashboard
+                                ├── /employees  → Employees
+                                └── /profile    → Profile
+```
+
+### Reusable Components
+
+| Komponen | Deskripsi |
+|----------|-----------|
+| `Modal` | Dialog modal — Escape close, backdrop click, body scroll lock |
+| `Pagination` | Navigasi halaman — Smart page numbers dengan ellipsis |
+| `Toast` | Notifikasi — Auto-dismiss, animasi slide-in/out |
+| `ProtectedRoute` | Auth guard — Redirect ke login jika belum auth |
+
+### Custom Hooks
+
+| Hook | Deskripsi |
+|------|-----------|
+| `useLocalStorage` | Sync React state dengan localStorage |
+| `useAuth` | Akses auth state (user, login, logout) |
+| `useTheme` | Akses theme state (isDark, setTheme) |
+| `useToast` | Tampilkan toast notification |
+
+## ✨ Fitur UI/UX
+
+- 🌗 **Dark/Light/System Mode** — Mengikuti preferensi OS atau pilihan manual
+- 🎨 **Soft Neon Minimal Theme** — Violet/cyan glow effects, gradient avatars
+- 📱 **Responsive** — Mobile-friendly (hamburger menu, stackable layout)
+- 🔔 **Toast Notifications** — Feedback success/error dengan animasi
+- ⌨️ **Keyboard Support** — Escape untuk tutup modal
+- 🔄 **Loading States** — Skeleton/spinner saat fetch data
+- 🔍 **Search & Filter** — Filter karyawan berdasarkan nama & divisi
+- 📄 **Pagination** — Navigasi halaman dengan smart page numbers
+
+## 🔧 Tech Details
+
+| Aspek | Detail |
+|-------|--------|
+| **Framework** | React 19 |
+| **Bundler** | Vite |
+| **Styling** | Tailwind CSS v4 |
+| **Routing** | React Router v7 |
+| **State** | React Context + useState + useLocalStorage |
+| **HTTP Client** | Native Fetch API (custom wrapper) |
+| **Fonts** | Google Fonts — Outfit (headings) + DM Sans (body) |
