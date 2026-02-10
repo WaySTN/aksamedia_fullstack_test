@@ -168,4 +168,4 @@ Semua endpoint API berada di root path (tanpa prefix `/api`).
 
 ## 👤 Author Wahyu Setiawan
 
-Dibuat untuk submission test magang fullstack developer di **Aksamedia**.
+Dibuat untuk submission test magang Wahyu Setiawan sebegai fullstack developer di **Aksamedia**.
