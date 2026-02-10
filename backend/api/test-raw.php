@@ -1,7 +1,6 @@
 <?php
 
-// This is a minimal entry point that bypasses Laravel entirely
-// Use this to test if PHP is working on Vercel at all
+
 
 header('Content-Type: application/json');
 http_response_code(200);
