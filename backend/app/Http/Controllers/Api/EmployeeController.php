@@ -8,13 +8,14 @@ use App\Http\Requests\Api\UpdateEmployeeRequest;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Handles employee CRUD operations.
  *
  * Provides full create, read, update, and delete functionality
  * for employee records, including image upload management.
+ * Images are stored as base64 data URLs in the database to support
+ * serverless deployments (e.g., Vercel) with read-only filesystems.
  */
 class EmployeeController extends Controller
 {
@@ -41,7 +42,7 @@ class EmployeeController extends Controller
             'data' => [
                 'employees' => $employees->map(fn(Employee $employee) => [
                     'id' => $employee->id,
-                    'image' => $employee->image ? url('storage/' . $employee->image) : null,
+                    'image' => $employee->image,
                     'name' => $employee->name,
                     'phone' => $employee->phone,
                     'division' => [
@@ -63,9 +64,22 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Convert an uploaded image file to a base64 data URL string.
+     *
+     * @param  \Illuminate\Http\UploadedFile  $file
+     * @return string  Base64-encoded data URL (e.g., data:image/jpeg;base64,...)
+     */
+    private function imageToBase64($file): string
+    {
+        $mimeType = $file->getMimeType();
+        $content = file_get_contents($file->getRealPath());
+        return 'data:' . $mimeType . ';base64,' . base64_encode($content);
+    }
+
+    /**
      * Store a newly created employee in storage.
      *
-     * Handles image upload to the 'employees' directory on the public disk.
+     * Handles image upload by converting to base64 data URL.
      * Validation is handled by StoreEmployeeRequest.
      */
     public function store(StoreEmployeeRequest $request): JsonResponse
@@ -78,7 +92,7 @@ class EmployeeController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('employees', 'public');
+            $data['image'] = $this->imageToBase64($request->file('image'));
         }
 
         Employee::create($data);
@@ -93,7 +107,7 @@ class EmployeeController extends Controller
      * Update the specified employee in storage.
      *
      * Supports partial updates using validated data.
-     * Replaces old image on the public disk when a new one is uploaded.
+     * Replaces old image with new base64 data URL when uploaded.
      */
     public function update(UpdateEmployeeRequest $request, string $id): JsonResponse
     {
@@ -114,11 +128,7 @@ class EmployeeController extends Controller
             ->toArray();
 
         if ($request->hasFile('image')) {
-            // Delete old image before storing the new one
-            if ($employee->image) {
-                Storage::disk('public')->delete($employee->image);
-            }
-            $data['image'] = $request->file('image')->store('employees', 'public');
+            $data['image'] = $this->imageToBase64($request->file('image'));
         }
 
         $employee->update($data);
@@ -131,8 +141,6 @@ class EmployeeController extends Controller
 
     /**
      * Remove the specified employee from storage.
-     *
-     * Also deletes the associated image file from the public disk.
      */
     public function destroy(string $id): JsonResponse
     {
@@ -143,11 +151,6 @@ class EmployeeController extends Controller
                 'status' => 'error',
                 'message' => 'Data karyawan tidak ditemukan',
             ], 404);
-        }
-
-        // Clean up the image file before deleting the record
-        if ($employee->image) {
-            Storage::disk('public')->delete($employee->image);
         }
 
         $employee->delete();
